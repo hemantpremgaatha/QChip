@@ -1,0 +1,7 @@
+qiskit>=1.0
+qiskit-aer>=0.14
+numpy>=1.24
+# PyAudio is optional (needed only for --source mic). On Windows, install a
+# prebuilt wheel if `pip install pyaudio` fails to compile PortAudio:
+#   pip install pipwin && pipwin install pyaudio
+pyaudio>=0.2.13
