@@ -5,13 +5,21 @@ import argparse
 import asyncio
 import logging
 
-from qcmp.music_processor import QuantumMusicProcessor, SyntheticSource, WavFileSource
+from qcmp.music_processor import (
+    QuantumMusicProcessor,
+    SyntheticSource,
+    TermuxMicrophoneSource,
+    WavFileSource,
+)
 
 
 def build_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Quantum Computing Music Processor")
     parser.add_argument("--config", default=None, help="Path to config.ini")
-    parser.add_argument("--source", choices=["mic", "file", "synthetic"], default="mic")
+    parser.add_argument(
+        "--source", choices=["mic", "termux-mic", "file", "synthetic"], default="mic",
+        help="'mic' uses PyAudio (desktop). 'termux-mic' uses termux-microphone-record (Android/Termux).",
+    )
     parser.add_argument("--wav", help="WAV file path when --source file")
     parser.add_argument(
         "--max-chunks", type=int, default=None, help="Stop after N audio chunks (useful for testing)"
@@ -34,6 +42,8 @@ def main() -> None:
         audio_source = WavFileSource(args.wav)
     elif args.source == "synthetic":
         audio_source = SyntheticSource(rate=44100)
+    elif args.source == "termux-mic":
+        audio_source = TermuxMicrophoneSource(rate=44100)
 
     processor = QuantumMusicProcessor(config_path=args.config, audio_source=audio_source)
     asyncio.run(processor.process_audio(max_chunks=args.max_chunks))
