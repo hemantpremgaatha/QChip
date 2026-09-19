@@ -1,7 +1,12 @@
 import numpy as np
-from qiskit import QuantumCircuit, transpile
-from qiskit.circuit.library import QFTGate, StatePreparation
-from qiskit_aer import AerSimulator
+
+try:
+    from qiskit import QuantumCircuit, transpile
+    from qiskit.circuit.library import QFTGate, StatePreparation
+    from qiskit_aer import AerSimulator
+    HAVE_QISKIT = True
+except ImportError:  # e.g. Termux/Android, where Qiskit-Aer is hard to install
+    HAVE_QISKIT = False
 
 
 class QuantumChip:
@@ -12,7 +17,8 @@ class QuantumChip:
         self.coherence_time_us = config["coherence_time_us"]
         self.entanglement_fidelity = config["entanglement_fidelity"]
         self.shots = config.get("shots", 4096)
-        self.simulator = AerSimulator()
+        self.simulator = AerSimulator() if HAVE_QISKIT else None
+        self._rng = np.random.default_rng()
         self.error_rates = {"decoherence": 0.0, "gate": 0.0, "readout": 0.0}
 
     @property
@@ -68,7 +74,10 @@ class QuantumChip:
         if not np.any(pts):
             return {"status": "silent", "dominant_frequencies": []}
         eff_rate = rate / block
-        result = self.execute_circuit(self.create_qft_circuit(pts))
+        if HAVE_QISKIT:
+            result = self.execute_circuit(self.create_qft_circuit(pts))
+        else:
+            result = self._numpy_qft(pts)
         # real input -> symmetric spectrum; fold bin k and n-k together
         folded = {}
         for state, p in result["probabilities"].items():
@@ -79,7 +88,20 @@ class QuantumChip:
         return {"status": "success",
                 "dominant_frequencies": [(k * eff_rate / n, p) for k, p in ranked]}
 
+    def _numpy_qft(self, pts):
+        """Qiskit-free path: the QFT unitary applied to the amplitude-encoded
+        state (equal to sqrt(N)*ifft), then `shots` measurements sampled."""
+        state = np.fft.ifft(pts / np.linalg.norm(pts)) * np.sqrt(len(pts))
+        p = np.abs(state) ** 2
+        counts = self._rng.multinomial(self.shots, p / p.sum())
+        width = self.num_qubits
+        return {"status": "success",
+                "probabilities": {format(i, f"0{width}b"): c / self.shots
+                                  for i, c in enumerate(counts) if c}}
+
     def recognize_pattern(self, features):
+        if not HAVE_QISKIT:
+            raise RuntimeError("pattern recognition needs qiskit + qiskit-aer")
         result = self.execute_circuit(self.create_pattern_circuit(features))
         best = max(result["probabilities"].items(), key=lambda kv: kv[1])
         return {"status": "success", "pattern": best[0], "probability": best[1]}

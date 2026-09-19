@@ -17,6 +17,14 @@ def test_qft_finds_tone():
     assert abs(top - 1000) < 60  # bin width ~43 Hz
 
 
+def test_numpy_fallback_finds_tone(monkeypatch):
+    import qcmp.chip as m
+    monkeypatch.setattr(m, "HAVE_QISKIT", False)
+    t = np.arange(1024) / 44100
+    res = chip().apply_quantum_fourier_transform(np.sin(2 * np.pi * 1000 * t) * 1e4, 44100)
+    assert abs(res["dominant_frequencies"][0][0] - 1000) < 60
+
+
 def test_silence():
     assert chip().apply_quantum_fourier_transform(np.zeros(1024))["status"] == "silent"
 

@@ -1,6 +1,11 @@
 import asyncio
 import logging
+import os
+import shutil
+import subprocess
+import tempfile
 import time
+import wave
 from datetime import datetime
 
 import numpy as np
@@ -50,6 +55,44 @@ class MicSource:
         self.pa.terminate()
 
 
+class TermuxMicSource:
+    """Microphone capture on Android via Termux.
+
+    PyAudio needs PortAudio, which Termux lacks. This shells out to
+    `termux-microphone-record` (pkg `termux-api` plus the Termux:API app with
+    microphone permission) to record a short clip per read. It is chunked
+    near-real-time capture, not low-latency streaming.
+    """
+
+    def __init__(self, buffer_size, rate):
+        if shutil.which("termux-microphone-record") is None:
+            raise RuntimeError(
+                "termux-microphone-record not found. Run: pkg install termux-api "
+                "and install the Termux:API app, then grant it microphone permission.")
+        self.buffer_size, self.rate = buffer_size, rate
+        self.tmpdir = tempfile.mkdtemp(prefix="qcmp_")
+
+    def read(self):
+        path = os.path.join(self.tmpdir, "clip.wav")
+        dur = max(self.buffer_size / self.rate, 0.05)
+        quiet = dict(stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+        subprocess.run(["termux-microphone-record", "-f", path, "-l", str(dur)], **quiet)
+        subprocess.run(["termux-microphone-record", "-q"], **quiet)
+        try:
+            with wave.open(path, "rb") as wf:
+                data = np.frombuffer(wf.readframes(wf.getnframes()), dtype=np.int16)
+        except Exception:
+            logger.warning("no readable clip this tick")
+            data = np.zeros(self.buffer_size, dtype=np.int16)
+        finally:
+            if os.path.exists(path):
+                os.remove(path)
+        return np.resize(data, self.buffer_size)
+
+    def close(self):
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+
 class QuantumMusicProcessor:
     def __init__(self, config_path=None, source="synthetic"):
         cm = ConfigManager(config_path) if config_path else ConfigManager()
@@ -62,7 +105,11 @@ class QuantumMusicProcessor:
 
     def _open_source(self):
         bs, rate = self.audio["buffer_size"], self.audio["rate"]
-        return MicSource(bs, rate) if self.source_kind == "mic" else SyntheticSource(bs, rate)
+        if self.source_kind == "mic":
+            return MicSource(bs, rate)
+        if self.source_kind == "termux":
+            return TermuxMicSource(bs, rate)
+        return SyntheticSource(bs, rate)
 
     async def process_audio(self, max_chunks=None, realtime=True):
         """Main loop. t=0 (the 'origin of time') is the first sample read."""
