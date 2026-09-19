@@ -1,3 +1,2 @@
 __pycache__/
-*.pyc
-*.wav
+.pytest_cache/
