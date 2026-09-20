@@ -21,5 +21,12 @@ same QFT when Qiskit is missing.
 Use `--source synthetic` to test without the mic. Mic capture is chunked (one short
 recording per read), so it is slower than real time.
 
+## Improve an audio file (EQ)
+    python -m qcmp.enhance song.wav song_eq.wav --preset vocal
+    python -m qcmp.enhance song.mp3 song_eq.mp3 --preset bass --treble 2 --normalize
+
+Presets: `flat`, `bass`, `vocal`, `bright`, `night`, `loud`. Plain NumPy (no scipy). WAV works
+out of the box; mp3/m4a/flac need `ffmpeg` (Termux: `pkg install ffmpeg`).
+
 ## Native Android app
 See `android/` (Kotlin, offline). Build: `cd android && gradlew assembleDebug`.
