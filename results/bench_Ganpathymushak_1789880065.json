@@ -1,0 +1,57 @@
+{
+  "host": "Ganpathymushak",
+  "system": {
+    "platform": "Windows-11-10.0.28000-SP0",
+    "machine": "AMD64",
+    "python": "3.12.10",
+    "logical_cpus": 8,
+    "physical_cpus": 4,
+    "cpu_percent": 15.0,
+    "cpu_mhz": 991,
+    "cpu_max_mhz": 1190,
+    "ram_gb": 7.8,
+    "ram_used_percent": 76.6,
+    "battery_percent": 67,
+    "plugged": false,
+    "power_plan": "Balanced"
+  },
+  "workers": 4,
+  "tasks": 32,
+  "seed": 0,
+  "total_work_s": 24.59277489996748,
+  "rows": [
+    {
+      "scheduler": "round_robin",
+      "predicted_s": 10.884892499947455,
+      "measured_s": 17.407471400045324,
+      "runs_s": [
+        17.407471400045324,
+        18.13412000000244,
+        17.153735200001393
+      ],
+      "speedup_vs_round_robin": 1.0
+    },
+    {
+      "scheduler": "lpt",
+      "predicted_s": 9.117161999980453,
+      "measured_s": 15.645962300011888,
+      "runs_s": [
+        15.645962300011888,
+        15.778989499958698,
+        15.386019100027625
+      ],
+      "speedup_vs_round_robin": 1.112585539083914
+    },
+    {
+      "scheduler": "anneal",
+      "predicted_s": 9.117161999980453,
+      "measured_s": 15.58870239998214,
+      "runs_s": [
+        15.83184140000958,
+        15.209054500039201,
+        15.58870239998214
+      ],
+      "speedup_vs_round_robin": 1.1166722510569749
+    }
+  ]
+}

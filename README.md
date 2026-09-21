@@ -28,5 +28,15 @@ recording per read), so it is slower than real time.
 Presets: `flat`, `bass`, `vocal`, `bright`, `night`, `loud`. Plain NumPy (no scipy). WAV works
 out of the box; mp3/m4a/flac need `ffmpeg` (Termux: `pkg install ffmpeg`).
 
+## QSched: scheduling to use your CPU better (phone + PC)
+    python -m qcmp.sched info                 # CPU/RAM/battery/power plan
+    python -m qcmp.sched bench --tasks 48     # real multiprocess run: round-robin vs LPT vs anneal
+    python -m qcmp.sched qaoa                 # simulated QAOA vs classical, small instances
+    python -m qcmp.sched offload              # modeled phone<->PC split (assumptions, not measured)
+
+Results are saved to `results/`. Works in Termux (NumPy only). The accompanying paper is in
+`paper/QSCHED.md` / `paper/QSCHED.pdf` (rebuild with `python paper/build_pdf.py`). Only the
+PC was measured; run `bench` in Termux to add phone numbers.
+
 ## Native Android app
 See `android/` (Kotlin, offline). Build: `cd android && gradlew assembleDebug`.
